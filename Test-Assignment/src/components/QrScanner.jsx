@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ const QrScanner = ({ onScanSuccess }) => {
   const videoRef = useRef(null);
   const codeReader = useRef(null);
   const scanInterval = useRef(null);
+  const scanStartTime = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState(false);
@@ -17,7 +17,7 @@ const QrScanner = ({ onScanSuccess }) => {
   useEffect(() => {
     codeReader.current = new BrowserMultiFormatReader();
     return () => {
-      if (codeReader.current) {
+      if (codeReader.current) { 
         codeReader.current.reset();
       }
       if (scanInterval.current) {
@@ -53,7 +53,19 @@ const QrScanner = ({ onScanSuccess }) => {
         await videoRef.current.play();
       }
 
+      scanStartTime.current = Date.now();
+
       scanInterval.current = setInterval(async () => {
+        const now = Date.now();
+        const elapsed = now - scanStartTime.current;
+
+        if (elapsed > 15000) { // 15 seconds timeout
+          clearInterval(scanInterval.current);
+          toast.error("❌ QR not found. Scan timed out.");
+          handleReset();
+          return;
+        }
+
         try {
           const result = await codeReader.current.decodeFromVideoElement(videoRef.current);
           if (result) {
@@ -80,7 +92,6 @@ const QrScanner = ({ onScanSuccess }) => {
           }
         } catch (err) {
           if (err instanceof NotFoundException) {
-            const now = Date.now();
             if (now - lastToastTime > 3000) {
               setLastToastTime(now);
               toast.dismiss();
@@ -147,16 +158,16 @@ const QrScanner = ({ onScanSuccess }) => {
     <div className="text-center p-4">
       <h1 className="text-2xl font-bold mb-4">QR Scanner</h1>
 
-      <div className="space-x-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 items-center justify-center mb-4">
         <button
           onClick={startScan}
           disabled={scanning}
-          className="bg-gray-700 text-white px-4 py-2 rounded shadow"
+          className="bg-gray-700 text-white px-4 py-2 rounded shadow w-full sm:w-auto"
         >
           {scanning ? 'Scanning...' : 'Camera Mode'}
         </button>
 
-        <label className="bg-blue-500 text-white px-4 py-2 rounded shadow cursor-pointer">
+        <label className="bg-blue-500 text-white px-4 py-2 rounded shadow cursor-pointer w-full sm:w-auto text-center">
           Upload Image
           <input
             type="file"
