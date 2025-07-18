@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://assignment-8hzp.onrender.com/api', 
+  baseURL: 'https://ar-test-mj76.onrender.com/api', 
 });
 
 export default API;
